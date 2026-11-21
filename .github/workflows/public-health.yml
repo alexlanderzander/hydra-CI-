@@ -1,0 +1,33 @@
+name: Public health contract
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "12 */6 * * *"
+permissions:
+  contents: read
+concurrency:
+  group: hydra-public-health
+  cancel-in-progress: true
+jobs:
+  public-health:
+    if: ${{ vars.HYDRA_PUBLIC_HEALTH_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check public Hydra health endpoint
+        env:
+          HEALTH_URL: ${{ vars.HYDRA_PUBLIC_HEALTH_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$HEALTH_URL" != https://* ]]; then
+            echo "Configure an HTTPS health URL"
+            exit 1
+          fi
+          response="$(curl --fail --silent --show-error --location --max-redirs 0 --max-time 12 "$HEALTH_URL")"
+          RESPONSE="$response" python3 - <<'PY'
+          import json, os
+          data = json.loads(os.environ["RESPONSE"])
+          assert data == {"status": "ok", "service": "hydra"}, "Unexpected public health response"
+          print("Hydra public API health contract passed")
+          PY
