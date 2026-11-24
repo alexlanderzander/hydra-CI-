@@ -156,14 +156,29 @@ def build(config, job):
         return 0 if rc == 0 else 1
 
 def main():
+    global PHASE
+    PHASE = "config"
     config = json.loads(CONFIG.read_text())
     if (not re.fullmatch("[a-f0-9]{32}", config["job"])
         or not re.fullmatch("[a-f0-9]{40}", config["revision"])
         or not re.fullmatch("[a-f0-9]{40}", config["tree"])
         or config["kind"] not in ("preflight", "build")):
         raise RuntimeError("Invalid job config")
+    PHASE = "anonymous-denial"
     require_http(config, "/v1/job", 401)
+    PHASE = "oidc-token"
     assertion = token()
+    PHASE = "oidc-claims"
+    if config["kind"] == "preflight":
+        segment = assertion.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(segment + "=" * (-len(segment) % 4)))
+        expected = {"iss":"https://token.actions.githubusercontent.com", "aud":AUDIENCE,
+            "sub":"repo:alexlanderzander/hydra-CI-:ref:refs/heads/main", "repository":"alexlanderzander/hydra-CI-",
+            "repository_id":"1466552945", "repository_owner_id":"162145428", "actor_id":"162145428",
+            "ref":"refs/heads/main", "workflow_ref":"alexlanderzander/hydra-CI-/.github/workflows/hydra-build.yml@refs/heads/main",
+            "runner_environment":"github-hosted", "sha":os.environ["GITHUB_SHA"], "workflow_sha":os.environ["GITHUB_SHA"]}
+        print("Public identity checks:", json.dumps({k:str(claims.get(k))==v for k,v in expected.items()},sort_keys=True))
+    PHASE = "broker-auth"
     job = json.loads(broker(config, "/v1/job", assertion))
     if (any(job.get(k) != config[k] for k in ("revision", "tree", "kind"))
         or type(job.get("partCount")) is not int or not 0 <= job["partCount"] <= 128):
@@ -171,9 +186,11 @@ def main():
     if config["kind"] == "preflight":
         if job["partCount"] != 0:
             raise RuntimeError("Preflight must not access source")
+        PHASE = "source-denial"
         require_http(config, "/v1/source/0", 404, assertion)
         receipt = {"revision": config["revision"], "kind": "preflight", "status": "passed",
                    "log": "Anonymous denied; signed exact-launcher OIDC accepted; source disabled."}
+        PHASE = "receipt"
         if json.loads(broker(config, "/v1/result", token(), receipt, 10000)) != {"accepted": True}:
             raise RuntimeError("Preflight receipt unavailable")
         print("Hydra OIDC preflight passed; no private source transferred")
@@ -185,7 +202,9 @@ def main():
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception:
-        # No tracebacks, URLs, response bodies, credentials, paths or private logs.
-        print("Hydra private CI launcher failed; no private details emitted")
+    except Exception as exc:
+        # Only a fixed phase and numeric HTTP status; no tracebacks, response body or tokens.
+        phase = globals().get("PHASE", "initialization")
+        status = exc.code if isinstance(exc, urllib.error.HTTPError) else 0
+        print("Hydra private CI launcher failed: phase=" + phase + " HTTP=" + str(status))
         raise SystemExit(1)
