@@ -20,6 +20,8 @@ PROBES = (
     ("GET", "/customer-templates.js", None),
     ("GET", "/v1/templates", None),
     ("GET", "/v1/runpod/serverless", None),
+    ("GET", "/v1/runpod/pods", None),
+    ("GET", "/v1/runpod/pods/nonexistent-ci-probe", None),
     ("GET", "/v1/runpod/serverless/nonexistent-ci-probe", None),
     ("GET", "/v1/runpod/gpu-pools", None),
     ("GET", "/v1/runpod/billing/serverless", None),
