@@ -5,7 +5,7 @@ from urllib.parse import urljoin, urlsplit
 
 HOST = "hydra.asset-node.com"
 ACCESS_HOST = "terrabid.cloudflareaccess.com"
-# Read-only probes; POST compare is a search, not a rental or mutation.
+# Read-only probes; POST compare is a search; POST serverless targets a read-only route.
 PROBES = (
     ("GET", "/", None),
     ("GET", "/app.js", None),
@@ -21,7 +21,7 @@ PROBES = (
     ("GET", "/v1/templates", None),
     ("GET", "/v1/runpod/serverless", None),
     ("GET", "/v1/runpod/serverless/nonexistent-ci-probe", None),
-    ("POST", "/v1/runpod/serverless", {}),
+    ("POST", "/v1/runpod/serverless", b"{}"),
     ("GET", "/serverless-workspace.js", None),
     ("GET", "/v1/owner/session", None),
     ("GET", "/v1/lium/managed/status", None),
