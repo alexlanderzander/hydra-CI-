@@ -17,6 +17,8 @@ PROBES = (
     ("GET", "/v1/marketplace/providers", None),
     ("GET", "/v1/openapi.json", None),
     ("POST", "/v1/marketplace/compare", b"{}"),
+    ("GET", "/customer-templates.js", None),
+    ("GET", "/v1/templates", None),
     ("GET", "/v1/owner/session", None),
     ("GET", "/v1/lium/managed/status", None),
 )
