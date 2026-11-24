@@ -208,5 +208,7 @@ if __name__ == "__main__":
         phase = globals().get("PHASE", "initialization")
         status = exc.code if isinstance(exc, urllib.error.HTTPError) else 0
         category = type(exc).__name__ if type(exc).__name__ in ("HTTPError","URLError","TimeoutError","SSLError","RuntimeError","JSONDecodeError","KeyError","ValueError") else "Other"
-        print("Hydra private CI launcher failed: phase=" + phase + " HTTP=" + str(status) + " category=" + category)
+        stage = exc.headers.get("X-Hydra-CI-Stage","") if isinstance(exc, urllib.error.HTTPError) else ""
+        stage = stage if stage in ("key","signature","claims","assertion","job-policy","job-storage") else "none"
+        print("Hydra private CI launcher failed: phase=" + phase + " HTTP=" + str(status) + " category=" + category + " broker=" + stage)
         raise SystemExit(1)
