@@ -174,7 +174,7 @@ def main():
         segment = assertion.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(segment + "=" * (-len(segment) % 4)))
         expected = {"iss":"https://token.actions.githubusercontent.com", "aud":AUDIENCE,
-            "sub":"repo:alexlanderzander/hydra-CI-:ref:refs/heads/main", "repository":"alexlanderzander/hydra-CI-",
+            "sub":"repo:alexlanderzander@162145428/hydra-CI-@1466552945:ref:refs/heads/main", "repository":"alexlanderzander/hydra-CI-",
             "repository_id":"1466552945", "repository_owner_id":"162145428", "actor_id":"162145428",
             "ref":"refs/heads/main", "workflow_ref":"alexlanderzander/hydra-CI-/.github/workflows/hydra-build.yml@refs/heads/main",
             "runner_environment":"github-hosted", "sha":os.environ["GITHUB_SHA"], "workflow_sha":os.environ["GITHUB_SHA"]}
