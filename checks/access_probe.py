@@ -21,6 +21,8 @@ PROBES = (
     ("GET", "/v1/templates", None),
     ("GET", "/v1/runpod/serverless", None),
     ("GET", "/v1/runpod/serverless/nonexistent-ci-probe", None),
+    ("GET", "/v1/runpod/gpu-pools", None),
+    ("GET", "/v1/runpod/billing/serverless", None),
     ("GET", "/serverless-workspace.js", None),
     ("GET", "/v1/owner/session", None),
     ("GET", "/v1/lium/managed/status", None),
