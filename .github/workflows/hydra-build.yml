@@ -1,0 +1,44 @@
+name: Hydra project CI broker
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hydra-build.yml'
+      - 'ci/job.json'
+      - 'checks/private_launcher.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: hydra-project-ci-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  private-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Determine job kind
+        id: mode
+        run: |
+          python3 - <<'PY'
+          import json, os
+          kind = json.load(open('ci/job.json'))['kind']
+          assert kind in ('preflight','build')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('kind=' + kind + '\n')
+          PY
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        if: steps.mode.outputs.kind == 'build'
+        with:
+          bun-version: '1.4.5'
+      - name: Prepare public runner dependencies
+        if: steps.mode.outputs.kind == 'build'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age zstd
+      - name: Execute authenticated Hydra project CI job
+        run: python3 checks/private_launcher.py

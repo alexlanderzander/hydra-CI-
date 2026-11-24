@@ -18,14 +18,17 @@ The Access smoke runs on pushes to its configuration, manually, and every six ho
 Pull requests test only the public probe logic. Standard public GitHub-hosted runners
 are free; larger runners, usage limits and other terms still apply.
 
+## Project-specific OIDC broker
+
+A separately configured hosted runner job verifies its exact immutable workflow identity with the Hydra broker. The current preflight is source-free. Only separately authorized build jobs may receive ephemeral private revision data; no private file, logs, token, artifact or cache is published by this repository. Full source-bearing builds remain subject to the project and GitHub usage terms and must not be used as unrelated compute.
+
 ## Security and release boundary
 
-- Never copy, download, decrypt, compile, or build the private application here.
+- Never commit, cache, publish or log private application source. The OIDC preflight is not a build.
 - No private checkout credentials, Cloudflare storage secrets, customer data,
   private logs, build artifacts, caches, or provider keys.
 - Public jobs have read-only repository permissions and no secret credentials.
-- Full private tests, compiler checks, database integration, authenticated browser
-  E2E and builds stay on a dedicated self-hosted runner in the private repository.
+- Full private checks require a separate authorized CI job and a private result receipt; public smoke checks alone never certify a private build.
 - Public smoke success is not a substitute for full private tests or proof that a
   paid booking, authenticated session or new revision works. A failed private
   release gate remains failed.
