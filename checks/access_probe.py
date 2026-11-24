@@ -9,6 +9,8 @@ ACCESS_HOST = "terrabid.cloudflareaccess.com"
 PROBES = (
     ("GET", "/", None),
     ("GET", "/app.js", None),
+    ("GET", "/index.html", None),
+    ("GET", "/styles.css", None),
     ("GET", "/health", None),
     ("GET", "/v1/marketplace/suppliers", None),
     ("GET", "/v1/marketplace/lium", None),
@@ -16,6 +18,7 @@ PROBES = (
     ("GET", "/v1/openapi.json", None),
     ("POST", "/v1/marketplace/compare", b"{}"),
     ("GET", "/v1/owner/session", None),
+    ("GET", "/v1/lium/managed/status", None),
 )
 
 def access_blocked(status, location):
