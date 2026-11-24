@@ -18,7 +18,7 @@ CONFIG = ROOT / "ci" / "job.json"
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        raise RuntimeError("Unexpected redirect")
+        raise urllib.error.HTTPError(req.full_url, code, "redirect refused", headers, fp)
 
 HTTP = urllib.request.build_opener(NoRedirect)
 
@@ -42,7 +42,7 @@ def token():
     return value
 
 def broker(config, path, auth=None, payload=None, maximum=500000):
-    headers = {"X-Hydra-CI-Job": config["job"], "Accept": "application/json"}
+    headers = {"X-Hydra-CI-Job": config["job"], "Accept": "application/json", "User-Agent": "Hydra-project-CI/1.0"}
     if auth:
         headers["Authorization"] = "Bearer " + auth
     data = None
@@ -57,7 +57,8 @@ def require_http(config, path, expected, auth=None):
     except urllib.error.HTTPError as exc:
         if exc.code == expected:
             return
-    raise RuntimeError("Authorization boundary assertion failed")
+        raise
+    raise RuntimeError("Authorization boundary returned success")
 
 def git_hash(kind, content):
     return hashlib.sha1(kind.encode() + b" " + str(len(content)).encode() + b"\0" + content).hexdigest()
@@ -206,5 +207,6 @@ if __name__ == "__main__":
         # Only a fixed phase and numeric HTTP status; no tracebacks, response body or tokens.
         phase = globals().get("PHASE", "initialization")
         status = exc.code if isinstance(exc, urllib.error.HTTPError) else 0
-        print("Hydra private CI launcher failed: phase=" + phase + " HTTP=" + str(status))
+        category = type(exc).__name__ if type(exc).__name__ in ("HTTPError","URLError","TimeoutError","SSLError","RuntimeError","JSONDecodeError","KeyError","ValueError") else "Other"
+        print("Hydra private CI launcher failed: phase=" + phase + " HTTP=" + str(status) + " category=" + category)
         raise SystemExit(1)
