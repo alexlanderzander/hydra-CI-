@@ -1,0 +1,32 @@
+name: Hydra public Access smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/public-access.yml'
+      - 'checks/**'
+  pull_request:
+    paths:
+      - '.github/workflows/public-access.yml'
+      - 'checks/**'
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+permissions:
+  contents: read
+concurrency:
+  group: hydra-public-access-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  access-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Test public probe contract
+        run: python3 -m unittest discover -s checks -p 'test_*.py'
+      - name: Test deployed access boundary without credentials
+        if: github.event_name != 'pull_request'
+        run: python3 checks/access_probe.py

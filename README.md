@@ -1,25 +1,46 @@
 # Hydra CI (public, source-free)
 
-This repository holds **only public black-box health checks** for Hydra. The product source, dependency files, unit tests and builds remain in the **private** `alexlanderzander/hydra` repository.
+This repository contains independent public black-box checks for the Hydra service.
+It is separate from the private Hydra product source.
 
-## Security boundary
+## Checks
 
-- **Never** check out, download, decrypt, compile, or build the private Hydra source here.
-- **Never** configure a private GitHub repository access token, Cloudflare R2 secret, payment provider secret, production API key or customer data here.
-- No public artifacts, Actions caches, uploads, screenshots or debug logs of private code.
-- Public workflows use **no secret credentials** and have `contents: read` only.
-- Public checks target only an intentionally public, unauthenticated `/health` endpoint.
-- Do not use Actions to evade GitHub's billing terms for private source builds. Private CI stays in the private repository.
-- HTTPS is required for an external staging endpoint. For private staging, use Cloudflare Access and keep CI in the private repository instead.
+- **Hydra public Access smoke**: validates the public probe, then tests the live HTTPS
+  authentication boundary for the dashboard, script, catalog, and owner-session routes.
+  Unauthenticated requests must be denied or redirected only to the known Access
+  login. It never follows login redirects, authenticates, rents a GPU, or prints
+  response contents, cookies or tokens.
+- **Public health contract**: optional public JSON health check for a future
+  intentionally public staging endpoint. Disabled until configured; the live
+  Access-protected Hydra domain does not need an unauthenticated health endpoint.
 
-## Setup
+The Access smoke runs on pushes to its configuration, manually, and every six hours.
+Pull requests test only the public probe logic. Standard public GitHub-hosted runners
+are free; larger runners, usage limits and other terms still apply.
 
-After deploying a staging API with an intentionally public `/health` endpoint:
+## Security and release boundary
 
-1. Open **Settings → Secrets and variables → Actions → Variables** in this repository.
-2. Add `HYDRA_PUBLIC_HEALTH_URL` pointing to your public HTTPS health endpoint, such as `https://staging.example.com/health`.
-3. Run **Actions → Public health contract → Run workflow**, or let the scheduled check run.
+- Never copy, download, decrypt, compile, or build the private application here.
+- No private checkout credentials, Cloudflare storage secrets, customer data,
+  private logs, build artifacts, caches, or provider keys.
+- Public jobs have read-only repository permissions and no secret credentials.
+- Full private tests, compiler checks, database integration, authenticated browser
+  E2E and builds stay on a dedicated self-hosted runner in the private repository.
+- Public smoke success is not a substitute for full private tests or proof that a
+  paid booking, authenticated session or new revision works. A failed private
+  release gate remains failed.
 
-The check runs without repository checkout, private source, external tokens or credentials. It confirms JSON output with `status: ok` and `service: hydra`. Without a configured URL, the remote job is skipped.
+## Run
 
-**No source code, build result, or secret is transferred between repositories — including via Cloudflare.**
+Use Actions → Hydra public Access smoke → Run workflow, or run the independent
+public checks locally:
+
+```sh
+python3 -m unittest discover -s checks -p 'test_*.py'
+python3 checks/access_probe.py
+```
+
+If a separate public health endpoint is intentionally made available, configure
+`HYDRA_PUBLIC_HEALTH_URL` under Settings → Secrets and variables → Actions → Variables.
+
+No code, private build result or credential is transferred between repositories.
